@@ -22,7 +22,7 @@ Before the design itself, we were required to submit a small document of what we
 
 By far the biggest experiment in this project was attempting to have components on both sides of the PCB. At the time of designing this, JLC PCB did not offer double-sided PCBA services. If they do now, I'm sure the cost would persuade me against it. But for all the components I planned to use and still have the PCB fit on the back on a NEMA17 motor, both sides of the board had to be populated.
 
-So I chose a standard PCBA with compoents soldered to the top side, but the board is designed in such a way, that it is then cut in half and the two halves are glued together and soldered in certain points to connect them together.
+So I chose a standard PCBA with components soldered to the top side, but the board is designed in such a way, that it is then cut in half and the two halves are glued together and soldered in certain points to connect them together.
 
 The choice of RJ45 connector for delivering power was also strange, but it was something I had on hand and by my calculations, could be used to carry 24V safely, at least at the expected currents.
 
@@ -73,20 +73,18 @@ Front Layout
 The firmware runs on the ESP32-S2, handling:
 1. Motor Control: Managed via stepper driver libraries (e.g., [TMCStepper](https://github.com/teemuatlut/TMCStepper)).
 2. Position Tracking: Sampling PWM output from the AS5600 magnetic encoder.
-3. Communication: Receiving high-level motion commands and transmitting real-time telemetry (position, error flags, stall conditions) over Wi-Fi.
+3. Communication: Receiving motion commands over Wi-Fi (simple web GUI) and transmitting real-time shaft position and StallGuard values.
 
 ---
 
 ## Retrospective & Mistakes
 
-Truth be told, this ended up being more of a failure project than a polished piece of hardware, but it turned out to be a massive learning experience. 
+This project would need a few more versions before it could be considered a success but it turned out to be a massive learning experience. I improved my soldering skills, because I had to remove some components or bridge certain pads with a wire due to design mistakes. I also had to solder the ESP32 module, because JLC PCB was out of stock on the one I was most familiar with.
 
-* **The Power Path:** Using an RJ45 connector for motor power delivery works in a pinch, but it's fundamentally sketchy and definitely not something I'd recommend for standard layouts. 
-* **The Logic Voltage Drop:** A major oversight involved the clamping diode on the 5V rail right near the USB-C port. It introduced an excessive voltage drop that dragged the voltage down too far below 5V, completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. 
+Sticking together two PCBs seemed interesting, but caused SO MANY headaches. Even designing it in KiCAD was far more difficult than I expected in the start, and the final assembly was really annoying. I wouldn't repeat it unless absolutely necessary, but it does save space. If I ever decide to do something similar, making the through-holes should be big enough to admit a typical arduino pin that can be pushed through and soldered from both sides, making a very crude via. Mine through-holes were smaller (again, to save space), and solder didn't want to flow into these tight spaces.
 
-Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have.
+* **The Logic Voltage Drop:** A major oversight involved the reverse current protection on the 5V rail right near the USB-C port. The diode used for this introduced an excessive voltage drop that dragged the voltage down too far below 5V, completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. 
 
-* **The Power Path:** Using an RJ45 connector for motor power delivery[cite: 1] works in a pinch, but it's fundamentally sketchy and definitely not something I'd recommend for standard layouts[cite: 1]. 
-* **The Logic Voltage Drop:** A major oversight involved the clamping diode on the 5V rail right near the USB-C port. It introduced an excessive voltage drop that dragged the voltage down too far below 5V, completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. 
+Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have. And also when it's better to go for an already available solution on the market.
 
 Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have.
