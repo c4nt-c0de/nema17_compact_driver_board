@@ -26,13 +26,13 @@ So I chose a standard PCBA with components soldered to the top side, but the boa
 
 The choice of RJ45 connector for delivering power was also strange, but it was something I had on hand and by my calculations, could be used to carry 24V safely, at least at the expected currents.
 
-Top View
+### Top View
 ![Front View](images/front_v3.png)
 
-Bottom View
+### Bottom View
 ![Back View](images/back_v3.png)
 
-Front Layout
+### Front Layout
 ![Front Layout](images/front_layout_v3.png)
 
 ---
@@ -81,10 +81,27 @@ The firmware runs on the ESP32-S2, handling:
 
 This project would need a few more versions before it could be considered a success but it turned out to be a massive learning experience. I improved my soldering skills, because I had to remove some components or bridge certain pads with a wire due to design mistakes. I also had to solder the ESP32 module, because JLC PCB was out of stock on the one I was most familiar with.
 
-Sticking together two PCBs seemed interesting, but caused SO MANY headaches. Even designing it in KiCAD was far more difficult than I expected in the start, and the final assembly was really annoying. I wouldn't repeat it unless absolutely necessary, but it does save space. If I ever decide to do something similar, making the through-holes should be big enough to admit a typical arduino pin that can be pushed through and soldered from both sides, making a very crude via. Mine through-holes were smaller (again, to save space), and solder didn't want to flow into these tight spaces.
+* **Double-sided PCB:** Sticking together two PCBs seemed interesting, but caused SO MANY headaches. Even designing it in KiCAD was far more difficult than I expected in the start, and the final assembly was really annoying. I wouldn't repeat it unless absolutely necessary, but it does save space. If I ever decide to do something similar, making the through-holes should be big enough to admit a typical arduino pin that can be pushed through and soldered from both sides, making a very crude via. Mine through-holes were smaller (again, to save space), and solder didn't want to flow into these tight spaces.
 
-* **The Logic Voltage Drop:** A major oversight involved the reverse current protection on the 5V rail right near the USB-C port. The diode used for this introduced an excessive voltage drop that dragged the voltage down too far below 5V, completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. 
+* **The Logic Voltage Drop:** A major oversight involved the reverse current protection on the 5V rail right near the USB-C port. The diode used for this introduced an excessive voltage drop that dragged the voltage down too far below 5V (when it's powered through USB-C only), completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. 
 
-Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have. And also when it's better to go for an already available solution on the market.
+Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have. But overall, I'm not too disappointed with this. Learned quite a bit, got to do a project of my own choosing and passed a class because of it.
 
-Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have.
+
+## Photos of the assembled board
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><b>Corner View</b></td>
+      <td align="center"><b>Top View</b></td>
+    </tr>
+    <tr>
+      <td align="center" style="padding: 10px;">
+        <img src="images/top_corner_view_shadow.jpeg" alt="Corner view" width="350">
+      </td>
+      <td align="center" style="padding: 10px;">
+        <img src="images/top_view.jpeg" alt="Top view" width="350">
+      </td>
+    </tr>
+  </table>
+</div>
