@@ -2,7 +2,7 @@
 
 As part of an embedded programming coursework, I designed a custom compact Wi-Fi-controlled stepper motor driver board engineered to mount directly onto the back of a NEMA17 motor.
 
-Before the design itself, we were required to submit a small document of what we're about to do (this file is in "study" folder). As always, there were some deviations from the initial plan due to challenges and some poor decisions.
+Before the design phase, we were required to submit an initial project proposal (this file is in the "study" folder). As always, there were some deviations from that plan due to unexpected challenges and poor decisions.
 
 ---
 
@@ -13,18 +13,18 @@ Before the design itself, we were required to submit a small document of what we
 * Shaft Encoder: AS5600-ASOT
 * IR Receiver: IRM-H638T-TR2-TL
 * Power Supply: 
-  * Motor Power: RJ45 connector (testing whether Cat5 cable can be used to bring power to the motor over longer distance than typical USB cable...)
-  * Logic Power: USB-C (5V) using a TPS54331DR switching regulator.
+  * Motor Power: RJ45 connector (testing whether a Cat5 cable can be used to supply power to the motor over a longer distance than a typical USB cable)
+  * Logic Power: USB-C (5V) using a TPS54331DR switching regulator
 
 ---
 
 ## Board Renders & Layout
 
-By far the biggest experiment in this project was attempting to have components on both sides of the PCB. At the time of designing this, JLC PCB did not offer double-sided PCBA services. If they do now, I'm sure the cost would persuade me against it. But for all the components I planned to use and still have the PCB fit on the back on a NEMA17 motor, both sides of the board had to be populated.
+The biggest experiment in this project was attempting to place components on both sides of the PCB. At the time of design, JLCPCB did not offer double-sided PCBA services. While the cost today would likely deter me from this approach, I needed to populate both sides to fit the design onto the back of a NEMA17 motor.
 
-So I chose a standard PCBA with components soldered to the top side, but the board is designed in such a way, that it is then cut in half and the two halves are glued together and soldered in certain points to connect them together.
+I opted for a standard PCBA with components soldered to the top side, but the board was designed to be cut in half, with the two sections then glued together and soldered at specific points to create electrical connections.
 
-The choice of RJ45 connector for delivering power was also strange, but it was something I had on hand and by my calculations, could be used to carry 24V safely, at least at the expected currents.
+The choice of an RJ45 connector for delivering power was also unconventional, but it was on hand and, by my calculations, could safely carry 24V at the expected currents.
 
 ### Top View
 ![Front View](images/front_v3.png)
@@ -73,24 +73,23 @@ The choice of RJ45 connector for delivering power was also strange, but it was s
 The firmware runs on the ESP32-S2, handling:
 1. Motor Control: Managed via stepper driver libraries (e.g., [TMCStepper](https://github.com/teemuatlut/TMCStepper)).
 2. Position Tracking: Sampling PWM output from the AS5600 magnetic encoder.
-3. Communication: Receiving motion commands over Wi-Fi (simple web GUI) and transmitting real-time shaft position and StallGuard values.
+3. Communication: Receiving motion commands over Wi-Fi via a simple web GUI and transmitting real-time shaft position and StallGuard values.
 
 ---
 
 ## Retrospective & Mistakes
 
-This project would need a few more versions before it could be considered a success but it turned out to be a massive learning experience. I improved my soldering skills, because I had to remove some components or bridge certain pads with a wire due to design mistakes. I also had to solder the ESP32 module, because JLC PCB was out of stock on the one I was most familiar with, which is something I've never done before.
+This project would require a few more iterations to be considered a full success, but it was a significant learning experience. I improved my soldering skills by necessity, having to remove components and bridge pads with wire to correct design errors. I also hand-soldered the ESP32 module, something I had never done before, because JLCPCB was out of stock on the module I was already familiar with.
 
-Overall, the motor did spin based on commands. It counted steps, tracked shaft position and even returned StallGuard values as it ran. But the torque was low and the assembly itself was frustrating.
+The motor successfully spun based on commands, counted steps, tracked shaft position, and returned StallGuard values. However, torque was limited and mechanical assembly was tedious.
 
-* **Double-sided PCB:** Sticking together two PCBs seemed interesting, but caused SO MANY headaches. Even designing it in KiCAD was far more difficult than I expected in the start, and the final assembly was really annoying. I wouldn't repeat it unless absolutely necessary, but it does save space. If I ever decide to do something similar, I should design the through-holes big enough to admit a typical arduino pin that would be pushed through and soldered from both sides, making a very crude via. My through-holes were smaller (again, to save space), and solder didn't want to flow into these tight spaces.
+* **Double-sided PCB:** Sticking together two PCBs seemed interesting, but caused many headaches. Even designing it in KiCad was far more difficult than expected, and the final assembly was tedious. I wouldn't repeat it unless absolutely necessary, though it does save space. If I ever attempt something similar, I should design the through-holes large enough to accommodate a typical Arduino pin that can be pushed through and soldered from both sides to create a crude via. My through-holes were too small, making it difficult for solder to flow into the tight spaces.
 
-* **The Logic Voltage Drop:** A major oversight involved the reverse current protection on the 5V rail right near the USB-C port. The diode used for this introduced an excessive voltage drop that dragged the voltage down too far below 5V (when it's powered through USB-C only), completely stopping the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads on the board. From here I also just used 5V power from the USB-C to power everything, which limited the torque significantly.
+* **The Logic Voltage Drop:** A major oversight involved the reverse current protection on the 5V rail near the USB-C port. The diode introduced an excessive voltage drop that dragged the voltage too far below 5V when powered exclusively via USB-C, completely preventing the TMC2209 drivers from functioning until I physically bypassed the diode and shorted the pads. Consequently, I relied entirely on 5V from the USB port, which limited motor torque significantly.
 
-Every mistake here taught me a lot more about board bring-up and power distribution than a successful design would have. But overall, I'm not too disappointed with this. Learned quite a bit, got to do a project of my own choosing and passed a class because of it.
+Every mistake taught me far more about board bring-up and power distribution than a flawless design would have. Ultimately, I am satisfied with the result: I learned a great deal, completed an independent project, and passed the class.
 
-
-## Photos of the assembled board
+## Photos of the Assembled Board
 <div align="center">
   <table>
     <tr>
