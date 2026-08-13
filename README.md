@@ -1,6 +1,8 @@
 # Wi-Fi-Controlled Stepper Motor Driver Board
 
-A compact, Wi-Fi-enabled controller board designed for NEMA17-style stepper motors featuring integrated shaft position feedback and an unconventional power delivery layout.
+This little project began as part of embedded programming class. I wished to design my own PCB and have it manufactured instead of choosing a project with the PCB that was available. So I tried to design a compact driver board that would screw into the back of a NEMA17 and could be controlled over Wi-Fi, as well as detect/receive IR signal  from a remote.
+
+Before the design itself, we were required to submit a small document of what we're about to do (this file is in "study" folder). As always, there were some deviations from the initial plan due to challenges and some poor decisions.
 
 ---
 
@@ -17,6 +19,12 @@ A compact, Wi-Fi-enabled controller board designed for NEMA17-style stepper moto
 ---
 
 ## Board Renders & Layout
+
+By far the biggest experiment in this project was attempting to have components on both sides of the PCB. At the time of designing this, JLC PCB did not offer double-sided PCBA services. If they do now, I'm sure the cost would persuade me against it. But for all the components I planned to use and still have the PCB fit on the back on a NEMA17 motor, both sides of the board had to be populated.
+
+So I chose a standard PCBA with compoents soldered to the top side, but the board is designed in such a way, that it is then cut in half and the two halves are glued together and soldered in certain points to connect them together.
+
+The choice of RJ45 connector for delivering power was also strange, but it was something I had on hand and by my calculations, could be used to carry 24V safely, at least at the expected currents.
 
 Top View
 ![Front View](images/front_v3.png)
