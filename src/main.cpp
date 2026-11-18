@@ -1,10 +1,15 @@
 #include <TMCStepper.h>
 #include "OTA_handler.h"
+
 #include "webpage.h"
+#include "tmc2209_control.h"
+#include "AS5600_encoder.h"
+#include "ir_receiver.h"
+
 
 #define ESP_WEBPAGE_HOSTNAME "myesp"
-#define SSID "Zyxel_6C61"
-#define PASSWORD "38UP8TY8HAYDQ8Y3"
+#define SSID "XXX"
+#define PASSWORD "YYY"
 
 // pin definitions
 #define BOOT_PIN       0
@@ -14,8 +19,8 @@
 #define DIAG_PIN       4
 #define ENN_PIN        5
 #define STDBY_PIN      6
-#define TMC_TX_PIN     17
-#define TMC_RX_PIN     18
+#define TX_PIN         17
+#define RX_PIN         18
 
 
 #define TOUCH1_PIN     7
@@ -28,7 +33,7 @@
 #define USB_DP_PIN     20
 
 #define IR_PIN         21
-#define ENCODER_PIN    39
+#define ENCODER_PIN    TOUCH2_PIN
 #define DEBUG_LED_PIN  42
 
 #define TMC2209_ADDRESS 0
@@ -39,6 +44,11 @@ TMC2209Stepper driver(&Serial1, R_SENSE, TMC2209_ADDRESS);
 
 bool ir_triggered = false;
 bool stall_guard_triggered = false;
+volatile bool ir_event_flag = false;
+volatile float shaft_angle_deg = 0.0f;
+volatile float total_angle = 0;
+float last_angle_deg = 0.0f;
+int rotations = 0; // accumulated rotations
 
 void toggle_led(int pin_num) {
     digitalWrite(pin_num, !digitalRead(pin_num));
@@ -53,95 +63,46 @@ uint16_t read_stallguard()
     return driver.SG_RESULT();
 }
 
-auto move_motor = []() {
-    driver.VACTUAL(1000);  // velocity is set here
-    delay(1000);
-    driver.VACTUAL(0);
-};
-
-const unsigned long stepInterval = 500;
-const unsigned long pulseWidth = 50;
-unsigned long lastStepTime = 0; // time of last pulse start
-bool stepState = false;
-
-void manualStepMotor() {
-    unsigned long now = micros();
-
-    if (!stepState && (now - lastStepTime >= stepInterval)) {
-        digitalWrite(STEP_PIN, HIGH);
-        stepState = true;
-        lastStepTime = now; // start counting for pulse width
-    }
-
-    if (stepState && (now - lastStepTime >= pulseWidth)) {
-        digitalWrite(STEP_PIN, LOW);
-        stepState = false;
-        lastStepTime = now; // now ready for next stepInterval
-    }
-}
-
-float get_angle() {
-    return random(0, 36000) / 100.0;
-}
-
-uint8_t tmc_version = 0;
-
-// Flags for ISR
-volatile bool ir_event_flag = false;
-volatile bool stall_event_flag = false;
-
-// ISR functions
 void IR_ISR() {
     ir_event_flag = true;
 }
 
-void STALL_ISR() {
-    stall_event_flag = true;
-}
 
-void handle_boot_button() {
+void handle_boot_button() { // only one I managed to get working
     pinMode(BOOT_PIN, INPUT);
 
     if (digitalRead(BOOT_PIN) == LOW) { 
         digitalWrite(ENN_PIN, LOW);
         delayMicroseconds(500);
-        //driver.rms_current(200);
         digitalWrite(DEBUG_LED_PIN, HIGH);
         digitalWrite(STEP_PIN, HIGH);
         delayMicroseconds(10);
         digitalWrite(STEP_PIN, LOW);
         delayMicroseconds(10);
-
+        digitalWrite(ENN_PIN, HIGH);
     } else {
         digitalWrite(DEBUG_LED_PIN, LOW);
     }
 }
 
-void setup() {
-    Serial.println("Alive and kicking");
-    analogSetAttenuation(ADC_11db);
-    analogReadResolution(12);
 
-    pinMode(DIR_PIN, OUTPUT);
-    pinMode(STEP_PIN, OUTPUT);
-    pinMode(STDBY_PIN, OUTPUT);
-    pinMode(ENN_PIN, OUTPUT);
-    digitalWrite(STDBY_PIN, LOW);
-    digitalWrite(ENN_PIN, LOW);
-    Serial1.begin(115200, SERIAL_8N1, TMC_RX_PIN, TMC_TX_PIN);
-    driver.begin();
-    driver.en_spreadCycle(true);
-    //driver.rms_current(200);
-    driver.microsteps(4);
+void setup() {
+
+    tmc2209_setup(
+        &driver,
+        DIR_PIN,
+        STEP_PIN, 
+        STDBY_PIN,
+        ENN_PIN,
+        RX_PIN,
+        TX_PIN,
+        DIAG_PIN
+    );
 
     pinMode(IR_PIN, INPUT);
-    pinMode(DIAG_PIN, INPUT_PULLUP); // DIAG usually needs pullup
     pinMode(DEBUG_LED_PIN, OUTPUT);
 
-    tmc_version = driver.version();
-
     attachInterrupt(digitalPinToInterrupt(IR_PIN), IR_ISR, RISING);
-    attachInterrupt(digitalPinToInterrupt(DIAG_PIN), STALL_ISR, FALLING);
 
     ota.begin(SSID, PASSWORD, [](void* server){
         register_web_routes(
@@ -149,44 +110,69 @@ void setup() {
             [](){ toggle_led(DEBUG_LED_PIN); },
             [](){ return get_esp_temp(); },
             [](){ return ir_triggered; },
-            [](){ return stall_guard_triggered; },
-            [](){ return driver.version(); },
-            [](){ return get_angle(); },
             [](){ return read_stallguard(); },
-            move_motor
+            &shaft_angle_deg,
+            &total_angle
         );
     }, ESP_WEBPAGE_HOSTNAME);
 }
 
 void loop() {
-    //ota.handle();
-/*
+    ota.handle();
     if(ir_event_flag) {
         ir_triggered = true;
         ir_event_flag = false;
-        digitalWrite(DEBUG_LED_PIN, HIGH);
-        delay(50);
-        digitalWrite(DEBUG_LED_PIN, LOW);
+        spin_motor(STEP_PIN, DIR_PIN, ENN_PIN, -total_angle);
+        shaft_angle_deg = read_shaft_angle_deg(ENCODER_PIN);
+        last_angle_deg = shaft_angle_deg;
+        total_angle = shaft_angle_deg;
+        rotations = 0;
     } else {
         ir_triggered = false;
     }
-
-    if(stall_event_flag) {
-        stall_guard_triggered = true;
-        stall_event_flag = false;
-        for(int i=0;i<2;i++){
-            digitalWrite(DEBUG_LED_PIN,HIGH);
-            delay(50);
-            digitalWrite(DEBUG_LED_PIN,LOW);
-            delay(50);
-        }
-    } else {
-        stall_guard_triggered = false;
-    }
-*/
-    //manualStepMotor();
-    digitalWrite(ENN_PIN, HIGH);
-    handle_boot_button();
     
-
+    handle_boot_button();
+    shaft_angle_deg = read_shaft_angle_deg(ENCODER_PIN);
+    float delta = shaft_angle_deg - last_angle_deg;
+    if(delta > 180.0f) {
+        rotations -= 1;
+    } else if(delta < -180.0f) {
+        rotations += 1;
+    }
+    last_angle_deg = shaft_angle_deg;    
+    total_angle = shaft_angle_deg + rotations*360.0f;
 }
+
+
+/*
+// the non blocking version of the current one
+// annoyingly, it doesnt work
+
+void handle_boot_button() {
+    pinMode(BOOT_PIN, INPUT);
+
+    if (digitalRead(BOOT_PIN) == LOW) { 
+        if (!boot_button_active) {
+            // first time pressed
+            boot_button_active = true;
+            digitalWrite(ENN_PIN, LOW);
+            digitalWrite(DEBUG_LED_PIN, HIGH);
+            step_last_time = micros();
+            step_pin_state = false;
+        }
+
+        unsigned long now = micros();
+        if (!step_pin_state && now - step_last_time >= 20) {
+            digitalWrite(STEP_PIN, HIGH);
+            step_last_time = now;
+            step_pin_state = true;
+        } else if (step_pin_state && now - step_last_time >= 20) {
+            digitalWrite(STEP_PIN, LOW);
+            step_last_time = now;
+            step_pin_state = false;
+
+            // pulse done, disable ENN until next press
+            digitalWrite(ENN_PIN, HIGH);
+        }
+
+*/
